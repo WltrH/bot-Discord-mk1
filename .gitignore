@@ -1,0 +1,5 @@
+#fichier config
+config.py
+
+#fichier env
+.env
