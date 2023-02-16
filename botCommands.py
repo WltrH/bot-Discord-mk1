@@ -1,6 +1,7 @@
 import os
 import discord
 from discord.ext import commands
+import asyncio
 from dotenv import find_dotenv, load_dotenv
 
 intents = discord.Intents.default()
@@ -45,5 +46,25 @@ async def invite(ctx, url):
     gen_channel = bot.get_channel(os.getenv("generalSalon"))
     await gen_channel.send(content=f"Invitation à rejoindre le discord {url}")
 
+
+# commande pour mute l'utilisateur pendant 10 minutes qui envoie un message avec un mot clé
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+    if "discord.gg" in message.content:
+        await message.delete()
+        await message.author.edit(mute=True)
+        await asyncio.sleep(600)
+        print("Tu prends 600 secondes de mute, attention à tes paroles !")
+    await bot.process_commands(message)
+
+# commande pour rentrer dans un salon vocal et y jouer de la musique en y mettant un lien youtube
+@bot.command(name='join')
+async def join(ctx):
+    channel = ctx.author.voice.channel
+    await channel.connect()
+    
+# commande pour récupérer le prix du bitcoin
 
 bot.run(os.getenv("tokenbot"))
