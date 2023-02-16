@@ -59,11 +59,23 @@ async def on_message(message):
         print("Tu prends 600 secondes de mute, attention à tes paroles !")
     await bot.process_commands(message)
 
-# commande pour rentrer dans un salon vocal et y jouer de la musique en y mettant un lien youtube
-@bot.command(name='join')
-async def join(ctx):
+
+# commande pour faire venir le bot dans un salon vocal
+@bot.command(name='come')
+async def come(ctx):
     channel = ctx.author.voice.channel
     await channel.connect()
+
+#coix du lien youtube à lire dans le salon vocal
+@bot.command(name='play')
+async def play(ctx, url):
+    #si le bot n'est pas dans un salon vocal, il en rejoint le même que l'utilisateur
+    if not ctx.guild.voice_client:
+        await ctx.author.voice.channel.connect()
+    #une fois le bot dans le salon vocal, il lit le lien youtube
+        voice_client = ctx.guild.voice_client
+        voice_client.play(discord.FFmpegPCMAudio(executable="C:/ffmpeg/bin/ffmpeg.exe", source=url))
+
     
 # commande pour récupérer le prix du bitcoin
 
