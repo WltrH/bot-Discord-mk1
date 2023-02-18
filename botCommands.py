@@ -16,11 +16,11 @@ dotenv_path = find_dotenv()
 #loading des infos du .env
 load_dotenv(dotenv_path)
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 @bot.event
 async def on_ready():
-    print("Bot ready for duty!")
+    print("Bot ici")
 
 # commande pour mettre en off le bot
 @bot.command(name='off')
@@ -76,7 +76,4 @@ async def play(ctx, url):
         voice_client = ctx.guild.voice_client
         voice_client.play(discord.FFmpegPCMAudio(executable="C:/ffmpeg/bin/ffmpeg.exe", source=url))
 
-    
-# commande pour récupérer le prix du bitcoin
-
-bot.run(os.getenv("tokenbot"))
+asyncio.run(bot.start(os.getenv("tokenbot")))
