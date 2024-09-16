@@ -1,28 +1,30 @@
 import discord
 import os
-
+from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class MyClient(discord.Client):
+class MyClient(commands.Bot):
     async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
+        print(f'Connecté en tant que {self.user} (ID: {self.user.id})')
         print('------')
 
-
-    async def on_message(self, message):
-        if message.content.startswith('/delete'):
-            msg = await message.channel.send('Deleting messages...')
-            await msg.delete()
+    @commands.command(name='delete')
+    async def delete_messages(self, ctx, amount: int):
+        await ctx.message.delete()
+        deleted = await ctx.channel.purge(limit=amount)
+        msg = await ctx.send(f'{len(deleted)} messages supprimés.')
+        await msg.delete(delay=5)
 
     async def on_message_delete(self, message):
-        msg = f'{message.author} deleted the message: {message.content}'
+        if message.author.bot:
+            return
+        msg = f'{message.author} a supprimé le message : {message.content}'
         await message.channel.send(msg)
 
-
 intents = discord.Intents.default()
-intents.message = True
+intents.message_content = True
 
-client = MyClient(intents=intents)
-client.run(os.environ["tokenbot"])
+bot = MyClient(command_prefix='/', intents=intents)
+bot.run(os.getenv("tokenbot"))
