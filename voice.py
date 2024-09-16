@@ -48,7 +48,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return filename
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -57,31 +57,32 @@ class Music(commands.Cog):
     #fonction pour joindre le channel vocal
     @commands.command()
     async def join(self, ctx, *, channel: discord.VoiceChannel):
-        if not ctx.message.author.voice:
-            if ctx.voice_client is not None:
-                return await ctx.voice_client.move_to(channel)
+        if ctx.voice_client is not None:
+            return await ctx.voice_client.move_to(channel)
         await channel.connect()
 
     @commands.command()
     async def play(self, ctx, *, query):
-        try:
-            source = await discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
-
-            await ctx.send(f"**Le bot joue maintenant:** {source.title}".format(source.title))
-        except:
-            await ctx.send("Le bot n'est pas présent dans le channel vocal")
+        if ctx.voice_client is None:
+            return await ctx.send("Le bot n'est pas présent dans le channel vocal")
+        
+        async with ctx.typing():
+            try:
+                source = await YTDLSource.from_url(query, loop=self.bot.loop)
+                ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+                await ctx.send(f"**Le bot joue maintenant:** {source.title}")
+            except Exception as e:
+                await ctx.send(f"Une erreur s'est produite: {str(e)}")
     
-    #fonction pour jouer de la musique
     @commands.command()
     async def yt(self, ctx, *, url):
-
-        async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=self.bot.loop)
-            ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        await self.play(ctx, query=url)
 
     @commands.command()
     async def stream(self, ctx, *, url):
+        if ctx.voice_client is None:
+            return await ctx.send("Le bot n'est pas présent dans le channel vocal")
+        
         async with ctx.typing():
             player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
             ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
@@ -94,15 +95,29 @@ class Music(commands.Cog):
             return await ctx.send("Le bot n'est pas présent dans le channel vocal")
 
         ctx.voice_client.source.volume = volume / 100
-        await ctx.send("Le volume a été mis à {}".format(volume))
+        await ctx.send("Le volume a été mis à {}%".format(volume))
     
     @commands.command()
     async def pause(self, ctx):
         if ctx.voice_client is None:
             return await ctx.send("Le bot n'est pas présent dans le channel vocal")
 
-        ctx.voice_client.pause()
-        await ctx.send("La musique a été mise en pause")
+        if ctx.voice_client.is_playing():
+            ctx.voice_client.pause()
+            await ctx.send("La musique a été mise en pause")
+        else:
+            await ctx.send("Aucune musique n'est en cours de lecture")
+    
+    @commands.command()
+    async def resume(self, ctx):
+        if ctx.voice_client is None:
+            return await ctx.send("Le bot n'est pas présent dans le channel vocal")
+
+        if ctx.voice_client.is_paused():
+            ctx.voice_client.resume()
+            await ctx.send("La lecture a repris")
+        else:
+            await ctx.send("La musique n'est pas en pause")
     
     @commands.command()
     async def stop(self, ctx):
@@ -111,20 +126,20 @@ class Music(commands.Cog):
 
         ctx.voice_client.stop()
         await ctx.send("La musique a été stoppée")
-    
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(
-    command_prefix='/', intents=intents,
-    description = "Bot de musique",
-    intents = intents,)
+    command_prefix='/', 
+    description="Bot de musique",
+    intents=intents,
+)
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('------')
-
 
 async def main():
     async with bot:
@@ -132,4 +147,3 @@ async def main():
         await bot.start(os.environ["tokenbot"])
 
 asyncio.run(main())
-

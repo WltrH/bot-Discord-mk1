@@ -20,7 +20,7 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 @bot.event
 async def on_ready():
-    print("Bot ici")
+    print("Bot Ready")
 
 # commande pour mettre en off le bot
 @bot.command(name='off')
@@ -63,10 +63,13 @@ async def on_message(message):
 # commande pour faire venir le bot dans un salon vocal
 @bot.command(name='come')
 async def come(ctx):
-    channel = ctx.author.voice.channel
-    await channel.connect()
+    if ctx.author.voice:
+        channel = ctx.author.voice.channel
+        await channel.connect()
+    else:
+        await ctx.send("Vous devez être dans un salon vocal pour utiliser cette commande.")
 
-#coix du lien youtube à lire dans le salon vocal
+#choix du lien youtube à lire dans le salon vocal
 @bot.command(name='play')
 async def play(ctx, url):
     #si le bot n'est pas dans un salon vocal, il en rejoint le même que l'utilisateur
